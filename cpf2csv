@@ -1,0 +1,235 @@
+#!/usr/bin/env perl
+
+#
+#	ABINIT-MP の log から IFIE の csv 作成		2015/06/15
+#		-r: raw (not cancel j-1 < i < j+1)
+#		-m: mix (cancel but raw data place on right out of edge)
+#
+
+use strict;
+
+my $calc_type = "HF";
+my $flag_read_nf = 0;
+my $flag_read_IFIE = 0;
+my $flag_raw = 0;
+my $nf = 0;
+my $suffix = "";
+if(($ARGV[0] =~ /^-m$/i) || ($ARGV[0] =~ /^--mix$/i)){
+	$flag_raw = 1;
+	$suffix = "_m";
+	shift(@ARGV);
+}
+elsif(($ARGV[0] =~ /^-r$/i) || ($ARGV[0] =~ /^--raw$/i)){
+	$flag_raw = 2;
+	$suffix = "_r";
+	shift(@ARGV);
+}
+elsif(($ARGV[0] =~ /^-h$/i) || ($ARGV[0] =~ /^--help$/i)){
+	&help;
+	exit;
+}
+
+my $in = shift(@ARGV);
+
+my $out_HF = $in;
+$out_HF =~ s/\.log$/_IFIE-HF$suffix.csv/;
+my $out_MP2 = $in;
+$out_MP2 =~ s/\.log$/_IFIE-MP2$suffix.csv/;
+my $out_TOT = $in;
+$out_TOT =~ s/\.log$/_IFIE-TOT$suffix.csv/;
+
+my @energiesHF;
+my @energiesMP2;
+my @lists = ();
+my $flag_error = 1;
+open(IN, $in);
+while(<IN>){
+	my $line = $_;
+
+	# get number of fragments
+	if($line =~ /^[\s\t]*##\sFRAGMENT\sINDEX/){
+		$flag_read_nf = 1;
+	}
+	elsif(($flag_read_nf == 1) && ($line =~ /Frag\./)){
+		$flag_read_nf = 2;
+	}
+	elsif($flag_read_nf == 2){
+		if($line =~ /^[\s\t]*\n$/){
+			$flag_read_nf = 0;
+		}
+		else{
+			$line =~ s/^[\s\t]*//;
+			$line =~ s/[\s\t]*\n$//;
+			my @datas = split(/[\s\t]+/, $line);
+			$nf = $datas[0];
+			push(@lists, "\"$datas[0]\"");
+		}
+	}
+
+	# get IFIE
+	elsif($line =~ /##\s(MP2)|(HF)-IFIE/){
+		$flag_error = 0;
+		@energiesHF = &make_matrix($nf);
+		if($& =~ /MP2/){
+			$calc_type = "MP2";
+			@energiesMP2 = &make_matrix($nf);
+		}
+		$flag_read_IFIE = 1;
+	}
+	elsif(($flag_read_IFIE == 1) && ($line =~ /^[\s\t]+-{2,}$/)){
+		$flag_read_IFIE = 2;
+	}
+	elsif($flag_read_IFIE == 2){
+		if($line =~ /^[\s\t]+\n$/){
+			$flag_read_IFIE = 0;
+		}
+		else{
+			$line =~ s/^[\s\t]*//;
+			$line =~ s/[\s\t]*\n$//;
+			my @datas = split(/[\s\t]+/, $line);
+			if($calc_type eq "MP2"){
+				$energiesHF[$datas[1] - 1][$datas[0] - 1] = &round(6, $datas[4] * 627.5095);
+				$energiesHF[$datas[0] - 1][$datas[1] - 1] = $energiesHF[$datas[1] - 1][$datas[0] - 1];
+				$energiesMP2[$datas[1] - 1][$datas[0] - 1] = &round(6, $datas[5] * 627.5095);
+				$energiesMP2[$datas[0] - 1][$datas[1] - 1] = $energiesMP2[$datas[1] - 1][$datas[0] - 1];
+			}
+			else{
+				$energiesHF[$datas[1] - 1][$datas[0] - 1] = $datas[5];
+				$energiesHF[$datas[0] - 1][$datas[1] - 1] = $datas[5];
+			}
+		}
+	}
+}
+close(IN);
+if($flag_error == 1){
+	print "ERROR: Cannot get IFIE energies. Maybe this file have some error.\n";
+	exit;
+}
+
+my @tmps = @lists;
+
+open(OUT, "> $out_HF");
+
+unshift(@tmps, "\"\"");
+my $label = join(",", @tmps);
+print OUT $label, "\n";
+
+for (my $i = 0; $i < $nf; $i++) {
+	my $result = $lists[$i];
+	my @raw = ();
+	for (my $j = 0; $j < $nf; $j++) {
+		if(($i - 1 <= $j) && ($j <= $i + 1) && ($flag_raw < 2)){
+			push(@raw, $energiesHF[$i][$j]);
+			$energiesHF[$i][$j] = "0.00";
+			$result .= ",\"0.00\"";
+		}
+		else{
+			$result .= ",\"" . $energiesHF[$i][$j] . "\"";
+		}
+	}
+	if($flag_raw == 1){
+		$result .= ",\"\"";
+		foreach my $tmp(@raw){
+			$result .= ",\"" . $tmp . "\"";
+		}
+	}
+	print OUT $result, "\n";
+}
+close(OUT);
+
+if($calc_type eq "MP2"){
+	open(MP2, "> $out_MP2");
+	open(TOT, "> $out_TOT");
+
+	print MP2 $label, "\n";
+	print TOT $label, "\n";
+
+	for (my $i = 0; $i < $nf; $i++) {
+		my $result_MP2 = $lists[$i];	# ラベル
+		my $result_TOT = $lists[$i];	# ラベル
+		my @raw_MP2 = ();
+		my @raw_TOT = ();
+		for (my $j = 0; $j < $nf; $j++) {
+			if(($i - 1 <= $j) && ($j <= $i + 1) && ($flag_raw < 2)){
+				push(@raw_MP2, $energiesMP2[$i][$j]);
+				push(@raw_TOT, $energiesHF[$i][$j] + $energiesMP2[$i][$j]);
+				$result_MP2 .= ",\"0.00\"";
+				$result_TOT .= ",\"0.00\"";
+			}
+			else{
+				$result_MP2 .= ",\"" . $energiesMP2[$i][$j] . "\"";
+				my $tmp = $energiesMP2[$i][$j] + $energiesHF[$i][$j];
+				$result_TOT .= ",\"" . $tmp . "\"";
+			}
+		}
+		if($flag_raw == 1){
+			$result_MP2 .= ",\"\"";
+			$result_TOT .= ",\"\"";
+			for (my $k = 0; $k <= $#raw_MP2; $k++) {
+				$result_MP2 .= ",\"$raw_MP2[$k]\"";;
+				$result_TOT .= ",\"$raw_TOT[$k]\"";;
+			}
+		}
+		print MP2 $result_MP2, "\n";
+		print TOT $result_TOT, "\n";
+	}
+	close(MP2);
+	close(TOT);
+}
+
+exit;
+
+# =============== round =============== #
+# 四捨五入して，末端のゼロを揃える
+sub round{
+	my $order = shift(@_);
+	my $value = shift(@_);
+
+	$value = int($value * (10 ** $order) + 0.5) / (10 ** $order);
+
+	my $zero = "0";
+	if($value !~ /\./){
+		my $zero = $zero x $order;
+		$value = $value . "." . $zero;
+	}
+	elsif($value =~ /\..*/){
+		my $length = length($&) - 1;
+		my $zero = $zero x ($order - $length);
+		$value = $value . $zero;
+	}
+}
+
+# =============== make_matrix =============== #
+# 行列作成
+sub make_matrix{
+	my $size = shift(@_);
+	my @matrix;
+
+	for (my $i = 0; $i < $size; $i++) {
+		for (my $j = 0; $j < $size; $j++) {
+			if($i == $j){
+				$matrix[$i][$j] = "0.00";
+			}
+			else{
+				$matrix[$i][$j] = "null";
+			}
+		}
+	}
+
+	return @matrix;
+}
+
+# =============== help =============== #
+sub help{
+print << "HELP"
+Generate IFIE csv for abinitmp
+ \$ cpf2csv [OPTION] <LOG_FILE>
+ 	 --> <LOG_FILE>_IFIE-HF.csv
+ 	 --> (if MP2 calc) <LOG_FILE>_IFIE-MP2.csv, <LOG_FILE>_IFIE-TOT.csv
+
+	OPTION:
+	 -r,--raw      raw (not cancel j-1 < i < j+1)
+	 -m,--mix      mix (cancel but raw data place on right out of edge)
+	 -h,--help
+HELP
+}
