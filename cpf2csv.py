@@ -136,7 +136,7 @@ if __name__ == '__main__':
 	if args.prefix != None:
 		prefix = args.prefix
 	else:
-		prefix = re.sub(r"\..+$", "", args.input)
+		prefix = re.sub(r"\..{3,4}$", "", args.input)
 
 	import csv
 
