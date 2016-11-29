@@ -24,7 +24,8 @@ if __name__ == '__main__':
 	global_option.add_argument("-N", dest = "flag_cancel", action = "store_true", default = False, help = "do NOT cancel the interaction between adjacent fragments (default: False)")
 
 	output_type = parser.add_argument_group(title = "energy type option", description = "energy type for output (default: -t)")
-	output_type.add_argument("-t", "--total", dest = "flag_total", action = "store_true", default = True, help = "total energy (kcal/mol)")
+	output_type.add_argument("-a", "--all", dest = "flag_all", action = "store_true", default = False, help = "select all type, same as -tfesxcdq")
+	output_type.add_argument("-t", "--total", dest = "flag_total", action = "store_true", default = False, help = "total energy (kcal/mol)")
 	output_type.add_argument("-f", "--hartree", dest = "flag_HF", action = "store_true", default = False, help = "Hartree-Fock energy (kcal/mol)")
 	output_type.add_argument("-e", "--correlation", dest = "flag_corr", action = "store_true", default = False, help = "electron correlation energy (kcal/mol)")
 	output_type.add_argument("-s", "--electrostatic", dest = "flag_ES", action = "store_true", default = False, help = "electrostatic interaction (ES) (kcal/mol)")
@@ -36,8 +37,31 @@ if __name__ == '__main__':
 
 	basic.check_exist(args.input, 2)
 
+	flag_total = args.flag_total
+	flag_HF = args.flag_HF
+	flag_corr = args.flag_corr
+	flag_ES = args.flag_ES
+	flag_EX = args.flag_EX
+	flag_CT = args.flag_CT
+	flag_DI = args.flag_DI
+	flag_q = args.flag_q
+
+	if args.flag_all:
+		flag_total = True
+		flag_HF = True
+		flag_corr = True
+		flag_ES = True
+		flag_EX = True
+		flag_CT = True
+		flag_DI = True
+		flag_q = True
+	elif flag_total == False:
+		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q):
+			# 他のオプションが未指定の場合のみ total オプションを機能させる
+			flag_total = True
+
 	flag_pieda = False
-	if args.flag_ES or args.flag_EX or args.flag_CT or args.flag_DI or args.flag_q:
+	if flag_ES or flag_EX or flag_CT or flag_DI or flag_q:
 		flag_pieda = True
 
 	fragment_atoms = []
@@ -239,7 +263,7 @@ if __name__ == '__main__':
 
 	import csv
 
-	if args.flag_total:
+	if flag_total:
 		output = prefix + "_tot.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -248,7 +272,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_tots)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_HF:
+	if flag_HF:
 		output = prefix + "_HF.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -257,7 +281,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_HFs)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_corr:
+	if flag_corr:
 		output = prefix + "_MP2.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -266,7 +290,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_MP2s)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_ES:
+	if flag_ES:
 		output = prefix + "_ES.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -275,7 +299,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_ESs)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_EX:
+	if flag_EX:
 		output = prefix + "_EX.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -284,7 +308,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_EXs)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_CT:
+	if flag_CT:
 		output = prefix + "_CT.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -293,7 +317,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_CTs)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_DI:
+	if flag_DI:
 		output = prefix + "_DI.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -302,7 +326,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_DIs)
 			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_q:
+	if flag_q:
 		output = prefix + "_transq.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
