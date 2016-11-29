@@ -17,14 +17,28 @@ from py_module_basic import basic
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description = "cpf2csv - convert log for ABINIT-MP to CSV", formatter_class=argparse.RawTextHelpFormatter)
-	parser.add_argument("-i", dest = "input", metavar = "LOG", required = True, help = "LOG for ABINIT-MP")
-	parser.add_argument("-o", dest = "prefix", help = "prefix for output")
-	parser.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly (Default: False)")
-	parser.add_argument("-p", dest = "flag_pieda", action = "store_true", default = False, help = "output with PIEDA results (Default: False)")
-	parser.add_argument("-N", dest = "flag_cancel", action = "store_true", default = False, help = "do NOT cancel the interaction between adjacent fragments (default: False)")
+	global_option = parser.add_argument_group(title = "global option", description = "")
+	global_option.add_argument("-i", dest = "input", metavar = "LOG", required = True, help = "LOG for ABINIT-MP")
+	global_option.add_argument("-o", dest = "prefix", help = "prefix for output")
+	global_option.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly (Default: False)")
+	global_option.add_argument("-N", dest = "flag_cancel", action = "store_true", default = False, help = "do NOT cancel the interaction between adjacent fragments (default: False)")
+
+	output_type = parser.add_argument_group(title = "energy type option", description = "energy type for output (default: -t)")
+	output_type.add_argument("-t", "--total", dest = "flag_total", action = "store_true", default = True, help = "total energy (kcal/mol)")
+	output_type.add_argument("-f", "--hartree", dest = "flag_HF", action = "store_true", default = False, help = "Hartree-Fock energy (kcal/mol)")
+	output_type.add_argument("-e", "--correlation", dest = "flag_corr", action = "store_true", default = False, help = "electron correlation energy (kcal/mol)")
+	output_type.add_argument("-s", "--electrostatic", dest = "flag_ES", action = "store_true", default = False, help = "electrostatic interaction (ES) (kcal/mol)")
+	output_type.add_argument("-x", "--exchange", dest = "flag_EX", action = "store_true", default = False, help = "exchange-repulsion energy (EX) (kcal/mol)")
+	output_type.add_argument("-c", "--chargetransfer-mix", dest = "flag_CT", action = "store_true", default = False, help = "charge transfer and other interaction energy (CT+mix) (kcal/mol)")
+	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
+	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer")
 	args = parser.parse_args()
 
 	basic.check_exist(args.input, 2)
+
+	flag_pieda = False
+	if args.flag_ES or args.flag_EX or args.flag_CT or args.flag_DI or args.flag_q:
+		flag_pieda = True
 
 	fragment_atoms = []
 	fragment_connects = []
@@ -33,7 +47,7 @@ if __name__ == '__main__':
 	energy_tots = []
 	energy_ESs = []
 	energy_EXs = []
-	energy_mixs = []
+	energy_CTs = []
 	energy_DIs = []
 	energy_qs = []
 
@@ -100,7 +114,7 @@ if __name__ == '__main__':
 							#  通常の行
 							energy_ESs.append([])
 							energy_EXs.append([])
-							energy_mixs.append([])
+							energy_CTs.append([])
 							energy_DIs.append([])
 							energy_qs.append([])
 						else:
@@ -109,7 +123,7 @@ if __name__ == '__main__':
 							labels.insert(0, "")
 							energy_ESs.insert(0, labels)
 							energy_EXs.insert(0, labels)
-							energy_mixs.insert(0, labels)
+							energy_CTs.insert(0, labels)
 							energy_DIs.insert(0, labels)
 							energy_qs.insert(0, labels)
 							continue
@@ -118,24 +132,24 @@ if __name__ == '__main__':
 							if i == j:
 								energy_ESs[i].append(0.0)
 								energy_EXs[i].append(0.0)
-								energy_mixs[i].append(0.0)
+								energy_CTs[i].append(0.0)
 								energy_DIs[i].append(0.0)
 								energy_qs[i].append(0.0)
 							elif j != 0:
 								energy_ESs[i].append("-")
 								energy_EXs[i].append("-")
-								energy_mixs[i].append("-")
+								energy_CTs[i].append("-")
 								energy_DIs[i].append("-")
 								energy_qs[i].append("-")
 							else:
 								# 最初の列はラベル
 								energy_ESs[i].append(i)
 								energy_EXs[i].append(i)
-								energy_mixs[i].append(i)
+								energy_CTs[i].append(i)
 								energy_DIs[i].append(i)
 								energy_qs[i].append(i)
 
-			elif args.flag_pieda == True and re_PIEDA.search(line):
+			elif flag_pieda and re_PIEDA.search(line):
 				flag_read = 5
 
 			elif re_empty.search(line):
@@ -192,7 +206,7 @@ if __name__ == '__main__':
 				frag_j = int(line[13:18].strip())
 				energy_ES = float(line[18:33].strip())
 				energy_EX = float(line[33:48].strip())
-				energy_mix = float(line[48:63].strip())
+				energy_CT = float(line[48:63].strip())
 				energy_DI = float(line[63:78].strip())
 				energy_q = float(line[78:93].strip())
 
@@ -201,7 +215,7 @@ if __name__ == '__main__':
 						# フラグメントが共有結合している場合
 						energy_ES = 0.0
 						energy_EX = 0.0
-						energy_mix = 0.0
+						energy_CT = 0.0
 						energy_DI = 0.0
 						energy_q = 0.0
 
@@ -209,8 +223,8 @@ if __name__ == '__main__':
 				energy_ESs[frag_j][frag_i] = energy_ES
 				energy_EXs[frag_i][frag_j] = energy_EX
 				energy_EXs[frag_j][frag_i] = energy_EX
-				energy_mixs[frag_i][frag_j] = energy_mix
-				energy_mixs[frag_j][frag_i] = energy_mix
+				energy_CTs[frag_i][frag_j] = energy_CT
+				energy_CTs[frag_j][frag_i] = energy_CT
 				energy_DIs[frag_i][frag_j] = energy_DI
 				energy_DIs[frag_j][frag_i] = energy_DI
 				energy_qs[frag_i][frag_j] = energy_q
@@ -225,32 +239,34 @@ if __name__ == '__main__':
 
 	import csv
 
-	output = prefix + "_HF.csv"
-	if args.flag_overwrite == False:
-		basic.check_overwrite(output)
-	with open(output, "w") as obj_output:
-		csv_writer = csv.writer(obj_output, lineterminator = "\n")
-		csv_writer.writerows(energy_HFs)
-		sys.stderr.write("%s was created\n" % output)
+	if args.flag_total:
+		output = prefix + "_tot.csv"
+		if args.flag_overwrite == False:
+			basic.check_overwrite(output)
+		with open(output, "w") as obj_output:
+			csv_writer = csv.writer(obj_output, lineterminator = "\n")
+			csv_writer.writerows(energy_tots)
+			sys.stderr.write("%s was created\n" % output)
 
-	output = prefix + "_MP2.csv"
-	if args.flag_overwrite == False:
-		basic.check_overwrite(output)
-	with open(output, "w") as obj_output:
-		csv_writer = csv.writer(obj_output, lineterminator = "\n")
-		csv_writer.writerows(energy_MP2s)
-		sys.stderr.write("%s was created\n" % output)
+	if args.flag_HF:
+		output = prefix + "_HF.csv"
+		if args.flag_overwrite == False:
+			basic.check_overwrite(output)
+		with open(output, "w") as obj_output:
+			csv_writer = csv.writer(obj_output, lineterminator = "\n")
+			csv_writer.writerows(energy_HFs)
+			sys.stderr.write("%s was created\n" % output)
 
-	output = prefix + "_tot.csv"
-	if args.flag_overwrite == False:
-		basic.check_overwrite(output)
-	with open(output, "w") as obj_output:
-		csv_writer = csv.writer(obj_output, lineterminator = "\n")
-		csv_writer.writerows(energy_tots)
-		sys.stderr.write("%s was created\n" % output)
+	if args.flag_corr:
+		output = prefix + "_MP2.csv"
+		if args.flag_overwrite == False:
+			basic.check_overwrite(output)
+		with open(output, "w") as obj_output:
+			csv_writer = csv.writer(obj_output, lineterminator = "\n")
+			csv_writer.writerows(energy_MP2s)
+			sys.stderr.write("%s was created\n" % output)
 
-	if args.flag_pieda == True:
-		# PIEDA の結果出力
+	if args.flag_ES:
 		output = prefix + "_ES.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -259,6 +275,7 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_ESs)
 			sys.stderr.write("%s was created\n" % output)
 
+	if args.flag_EX:
 		output = prefix + "_EX.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -267,14 +284,16 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_EXs)
 			sys.stderr.write("%s was created\n" % output)
 
-		output = prefix + "_MIX.csv"
+	if args.flag_CT:
+		output = prefix + "_CT.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy_mixs)
+			csv_writer.writerows(energy_CTs)
 			sys.stderr.write("%s was created\n" % output)
 
+	if args.flag_DI:
 		output = prefix + "_DI.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
@@ -283,7 +302,8 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy_DIs)
 			sys.stderr.write("%s was created\n" % output)
 
-		output = prefix + "_qtrans.csv"
+	if args.flag_q:
+		output = prefix + "_transq.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
