@@ -32,7 +32,7 @@ if __name__ == '__main__':
 	output_type.add_argument("-x", "--exchange", dest = "flag_EX", action = "store_true", default = False, help = "exchange-repulsion energy (EX) (kcal/mol)")
 	output_type.add_argument("-c", "--chargetransfer-mix", dest = "flag_CT", action = "store_true", default = False, help = "charge transfer and other interaction energy (CT+mix) (kcal/mol)")
 	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
-	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer")
+	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer (e; I(row) -> J(col))")
 	output_type.add_argument("-ac", "--atomic-charge", dest = "flag_ac", action = "store_true", default = False, help = "atomic charge")
 	args = parser.parse_args()
 
@@ -258,7 +258,7 @@ if __name__ == '__main__':
 				energy_DIs[frag_i][frag_j] = energy_DI
 				energy_DIs[frag_j][frag_i] = energy_DI
 				energy_qs[frag_i][frag_j] = energy_q
-				energy_qs[frag_j][frag_i] = energy_q
+				energy_qs[frag_j][frag_i] = -1 * energy_q
 
 			elif flag_read == 7:
 				line = line.strip()
