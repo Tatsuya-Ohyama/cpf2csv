@@ -33,6 +33,7 @@ if __name__ == '__main__':
 	output_type.add_argument("-c", "--chargetransfer-mix", dest = "flag_CT", action = "store_true", default = False, help = "charge transfer and other interaction energy (CT+mix) (kcal/mol)")
 	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
 	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer")
+	output_type.add_argument("-ac", "--atomic-charge", dest = "flag_ac", action = "store_true", default = False, help = "atomic charge")
 	args = parser.parse_args()
 
 	basic.check_exist(args.input, 2)
@@ -56,7 +57,7 @@ if __name__ == '__main__':
 		flag_DI = True
 		flag_q = True
 	elif flag_total == False:
-		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q):
+		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q or args.flag_ac):
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
 			flag_total = True
 
@@ -74,6 +75,7 @@ if __name__ == '__main__':
 	energy_CTs = []
 	energy_DIs = []
 	energy_qs = []
+	atomic_charges = [["No.", "Atom", "Atomic pop.", "Net charge"]]
 
 	with open(args.input, "r") as obj_input:
 		re_wsp = re.compile(r"[\s\t]+")
@@ -82,6 +84,7 @@ if __name__ == '__main__':
 		re_IFIE = re.compile(r"## ((HF)|(MP2))-IFIE")
 		re_separator = re.compile(r"-{5,}")
 		re_PIEDA = re.compile(r"## PIEDA")
+		re_charge = re.compile(r"No\. Atom   Atomic pop\.  Net charge")
 		re_empty = re.compile(r"^[\s\t]*\n$")
 
 		flag_read = 0
@@ -176,6 +179,9 @@ if __name__ == '__main__':
 			elif flag_pieda and re_PIEDA.search(line):
 				flag_read = 5
 
+			elif re_charge.search(line):
+				flag_read = 7
+
 			elif re_empty.search(line):
 				flag_read = 0
 
@@ -254,6 +260,11 @@ if __name__ == '__main__':
 				energy_qs[frag_i][frag_j] = energy_q
 				energy_qs[frag_j][frag_i] = energy_q
 
+			elif flag_read == 7:
+				line = line.strip()
+				datas = re_wsp.split(line)
+				atomic_charges.append(datas)
+
 	# 出力ファイル
 	prefix = ""
 	if args.prefix != None:
@@ -270,7 +281,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_tots)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (total)\n" % output)
 
 	if flag_HF:
 		output = prefix + "_HF.csv"
@@ -279,7 +290,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_HFs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (hartree)\n" % output)
 
 	if flag_corr:
 		output = prefix + "_MP2.csv"
@@ -288,7 +299,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_MP2s)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (correlation)\n" % output)
 
 	if flag_ES:
 		output = prefix + "_ES.csv"
@@ -297,7 +308,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_ESs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (electrostatic)\n" % output)
 
 	if flag_EX:
 		output = prefix + "_EX.csv"
@@ -306,7 +317,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_EXs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (exchange)\n" % output)
 
 	if flag_CT:
 		output = prefix + "_CT.csv"
@@ -315,7 +326,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_CTs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (chargetransfer-mix)\n" % output)
 
 	if flag_DI:
 		output = prefix + "_DI.csv"
@@ -324,7 +335,7 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_DIs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (dispersion)\n" % output)
 
 	if flag_q:
 		output = prefix + "_transq.csv"
@@ -333,4 +344,13 @@ if __name__ == '__main__':
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy_qs)
-			sys.stderr.write("%s was created\n" % output)
+			sys.stderr.write("create: %s (chargetransfer-amount)\n" % output)
+
+	if args.flag_ac:
+		output = prefix + "_ac.csv"
+		if args.flag_overwrite == False:
+			basic.check_overwrite(output)
+		with open(output, "w") as obj_output:
+			csv_writer = csv.writer(obj_output, lineterminator = "\n")
+			csv_writer.writerows(atomic_charges)
+			sys.stderr.write("create: %s (atomic-charge)\n" % output)
