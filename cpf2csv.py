@@ -12,6 +12,13 @@ import argparse
 from py_module_basic import basic
 
 # =============== functions =============== #
+# 二次リストから特定の値を検索し、index を返す
+def search_list(query, array, offset = 0):
+	index = offset
+	for item in array:
+		if query in item:
+			return index
+		index += 1
 
 
 # =============== main =============== #
@@ -75,7 +82,7 @@ if __name__ == '__main__':
 	energy_CTs = []
 	energy_DIs = []
 	energy_qs = []
-	atomic_charges = [["No.", "Atom", "Atomic pop.", "Net charge"]]
+	atomic_charges = [["Fragment No.", "Atom No.", "Atom Name", "Atomic pop.", "Net charge"]]
 
 	with open(args.input, "r") as obj_input:
 		re_wsp = re.compile(r"[\s\t]+")
@@ -263,7 +270,9 @@ if __name__ == '__main__':
 			elif flag_read == 7:
 				line = line.strip()
 				datas = re_wsp.split(line)
+				datas.insert(0, search_list(int(datas[0]), fragment_atoms, 1))
 				atomic_charges.append(datas)
+
 
 	# 出力ファイル
 	prefix = ""
