@@ -181,13 +181,13 @@ class EnergyData:
 		elif energy_type == "CR":
 			energies = self.__energy_CR * au
 		elif energy_type == "ES":
-			energies = self.__energy_ES * au
+			energies = self.__energy_ES
 		elif energy_type == "EX":
-			energies = self.__energy_EX * au
+			energies = self.__energy_EX
 		elif energy_type == "CT":
-			energies = self.__energy_CT * au
+			energies = self.__energy_CT
 		elif energy_type == "DI":
-			energies = self.__energy_DI * au
+			energies = self.__energy_DI
 		elif energy_type == "Q":
 			energies = self.__energy_Q
 
@@ -198,12 +198,12 @@ class EnergyData:
 
 	def output_energy(self, energy_type = "Total"):
 		""" IFIE エネルギーを出力形式で返すメソッド """
-		result = [[""] + energy.get_label()]
+		result = [[""] + self.get_label()]
 		row_label = np.matrix(np.array(self.get_label())).T
 
 		if energy_type == "Total":
 			result += np.concatenate((row_label, self.get_energy("Total")), axis = 1).tolist()
-		if energy_type == "HF":
+		elif energy_type == "HF":
 			result += np.concatenate((row_label, self.get_energy("HF")), axis = 1).tolist()
 		elif energy_type == "CR":
 			result += np.concatenate((row_label, self.get_energy("CR")), axis = 1).tolist()
