@@ -10,6 +10,7 @@ import numpy as np
 
 # =============== const =============== #
 au = 627.5095
+digit = 4
 
 class EnergyData:
 	""" エネルギーデータを扱うクラス """
@@ -191,6 +192,6 @@ class EnergyData:
 			energies = self.__energy_Q
 
 		if frag_idx is None:
-			return energies
+			return np.round(energies, digit)
 		else:
-			return energies[frag_idx[0]][frag_idx[1]]
+			return np.round(energies[frag_idx[0]][frag_idx[1]], digit)
