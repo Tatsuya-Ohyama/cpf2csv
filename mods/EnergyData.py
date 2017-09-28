@@ -73,7 +73,7 @@ class EnergyData:
 						# 初期化
 						self.__energy_HF = np.zeros((len(self.__frag_atom), len(self.__frag_atom)))
 						self.__energy_CR = np.zeros((len(self.__frag_atom), len(self.__frag_atom)))
-						self.__charge_frag = [0.0 for i in range(len(self.__frag_atom))]
+						self.__charge_frag = [[0.0, []] for i in range(len(self.__frag_atom))]
 						flag_read[1] = 1
 
 					elif re_separator.search(line):
@@ -138,9 +138,9 @@ class EnergyData:
 						continue
 
 					atom_idx = int(line[:13].strip())
-					data_idx = [idx for idx, value in enumerate(self.__frag_atom) if atom_idx in value][0]
 					charge = float(line[31:].strip())
-					self.__charge_atom.append(charge)
+					data_idx = [idx for idx, value in enumerate(self.__frag_atom) if atom_idx in value][0]
+					self.__charge_atom.append([atom_idx, line[14:19].strip(), charge])
 					self.__charge_frag[data_idx] += charge
 
 	def get_label(self, frag_idx = None):
@@ -218,3 +218,23 @@ class EnergyData:
 		elif energy_type == "Q":
 			result += np.concatenate((row_label, self.get_energy("Q")), axis = 1).tolist()
 		return result
+
+	def output_charge(self):
+		""" 電荷情報を出力形式で返すメソッド """
+		result = []
+		result_frag = [["Fragment index", "Fragment charge", ""]]
+		result_atom = [["Fragment index", "Atom index", "Atom", "Atomic charge"]]
+
+		cnt_atom = 0
+		for frag_idx in range(len(self.__frag_atom)):
+			result_frag.append([frag_idx + 1, self.__charge_frag[frag_idx], ""])
+			for atom_idx in self.__frag_atom[frag_idx]:
+				result_atom.append([frag_idx + 1, self.__charge_atom[atom_idx - 1][0], self.__charge_atom[atom_idx - 1][1], self.__charge_atom[atom_idx - 1][2]])
+
+		diff_row = len(result_atom) - len(result_frag)
+		if 0 < diff_row:
+			result_frag += [["", "", ""] for x in range(diff_row)]
+		elif diff_row < 0:
+			result_atom += [["", "", "", ""] for x in range(diff_row)]
+
+		return [x + y for x, y in zip(result_frag, result_atom)]
