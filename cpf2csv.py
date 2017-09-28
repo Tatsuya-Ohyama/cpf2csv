@@ -40,7 +40,7 @@ if __name__ == '__main__':
 	output_type.add_argument("-c", "--chargetransfer-mix", dest = "flag_CT", action = "store_true", default = False, help = "charge transfer and other interaction energy (CT+mix) (kcal/mol)")
 	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
 	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer (e; I(row) -> J(col))")
-	output_type.add_argument("-ac", "--atomic-charge", dest = "flag_ac", action = "store_true", default = False, help = "atomic charge")
+	output_type.add_argument("-pc", "--partial-charge", dest = "flag_pc", action = "store_true", default = False, help = "partial charge")
 	args = parser.parse_args()
 
 	basic.check_exist(args.input, 2)
@@ -53,6 +53,7 @@ if __name__ == '__main__':
 	flag_CT = args.flag_CT
 	flag_DI = args.flag_DI
 	flag_q = args.flag_q
+	flag_pc = args.flag_pc
 
 	if args.flag_all:
 		flag_total = True
@@ -63,8 +64,9 @@ if __name__ == '__main__':
 		flag_CT = True
 		flag_DI = True
 		flag_q = True
+		flag_pc = True
 	elif flag_total == False:
-		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q or args.flag_ac):
+		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q or args.flag_pc):
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
 			flag_total = True
 
@@ -156,11 +158,11 @@ if __name__ == '__main__':
 			csv_writer.writerows(energy.output_energy("Q"))
 			sys.stderr.write("create: %s (chargetransfer-amount)\n" % output)
 
-	if args.flag_ac:
+	if args.flag_pc:
 		output = prefix + "_ac.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(atomic_charges)
-			sys.stderr.write("create: %s (atomic-charge)\n" % output)
+			csv_writer.writerows(energy.output_charge())
+			sys.stderr.write("create: %s (charge)\n" % output)
