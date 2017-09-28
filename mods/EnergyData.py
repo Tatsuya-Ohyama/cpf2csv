@@ -176,7 +176,7 @@ class EnergyData:
 		energies = None
 		if energy_type == "Total":
 			energies = (self.__energy_HF + self.__energy_CR) * au
-		if energy_type == "HF":
+		elif energy_type == "HF":
 			energies = self.__energy_HF * au
 		elif energy_type == "CR":
 			energies = self.__energy_CR * au
@@ -195,3 +195,4 @@ class EnergyData:
 			return np.round(energies, digit)
 		else:
 			return np.round(energies[frag_idx[0]][frag_idx[1]], digit)
+
