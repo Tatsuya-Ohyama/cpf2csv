@@ -196,3 +196,25 @@ class EnergyData:
 		else:
 			return np.round(energies[frag_idx[0]][frag_idx[1]], digit)
 
+	def output_energy(self, energy_type = "Total"):
+		""" IFIE エネルギーを出力形式で返すメソッド """
+		result = [[""] + energy.get_label()]
+		row_label = np.matrix(np.array(self.get_label())).T
+
+		if energy_type == "Total":
+			result += np.concatenate((row_label, self.get_energy("Total")), axis = 1).tolist()
+		if energy_type == "HF":
+			result += np.concatenate((row_label, self.get_energy("HF")), axis = 1).tolist()
+		elif energy_type == "CR":
+			result += np.concatenate((row_label, self.get_energy("CR")), axis = 1).tolist()
+		elif energy_type == "ES":
+			result += np.concatenate((row_label, self.get_energy("ES")), axis = 1).tolist()
+		elif energy_type == "EX":
+			result += np.concatenate((row_label, self.get_energy("EX")), axis = 1).tolist()
+		elif energy_type == "CT":
+			result += np.concatenate((row_label, self.get_energy("CT")), axis = 1).tolist()
+		elif energy_type == "DI":
+			result += np.concatenate((row_label, self.get_energy("DI")), axis = 1).tolist()
+		elif energy_type == "Q":
+			result += np.concatenate((row_label, self.get_energy("Q")), axis = 1).tolist()
+		return result
