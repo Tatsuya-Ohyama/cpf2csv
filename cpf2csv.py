@@ -29,7 +29,6 @@ if __name__ == '__main__':
 	global_option.add_argument("-i", dest = "input", metavar = "LOG", required = True, help = "LOG for ABINIT-MP")
 	global_option.add_argument("-o", dest = "prefix", help = "prefix for output")
 	global_option.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly (Default: False)")
-	global_option.add_argument("-N", dest = "flag_cancel", action = "store_true", default = False, help = "do NOT cancel the interaction between adjacent fragments (default: False)")
 
 	output_type = parser.add_argument_group(title = "energy type option", description = "energy type for output (default: -t)")
 	output_type.add_argument("-a", "--all", dest = "flag_all", action = "store_true", default = False, help = "select all type, same as -tfesxcdq")
