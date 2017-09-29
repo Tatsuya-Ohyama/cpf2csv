@@ -41,6 +41,11 @@ if __name__ == '__main__':
 	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
 	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer (e; I(row) -> J(col))")
 	output_type.add_argument("-pc", "--partial-charge", dest = "flag_pc", action = "store_true", default = False, help = "partial charge")
+
+	output_range = parser.add_mutually_exclusive_group()
+	output_range.add_argument("--include", dest = "include", metavar = "Frag_No.", nargs = "+", help = "")
+	output_range.add_argument("--exclude", dest = "exclude", metavar = "Frag_No.", nargs = "+", help = "")
+
 	args = parser.parse_args()
 
 	basic.check_exist(args.input, 2)
@@ -70,12 +75,24 @@ if __name__ == '__main__':
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
 			flag_total = True
 
-	flag_pieda = False
-	if flag_ES or flag_EX or flag_CT or flag_DI or flag_q:
-		flag_pieda = True
 
 	# データ読み込み＆解析
 	energy = EnergyData.EnergyData(args.input)
+
+
+	# 出力フラグメントの決定
+	output_range = []
+	if args.include is None and args.exclude is None:
+		# 未指定の場合
+		output_range = energy.get_label()
+
+	elif args.include is not None:
+		# include で指定の場合
+		output_range = [int(x) for x in args.include]
+
+	elif args.exclude is not None:
+		# exclude で指定の場合
+		output_range = list(set(energy.get_label()) - set([int(x) for x in args.exclude]))
 
 
 	# 出力ファイル
@@ -92,7 +109,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("Total"))
+			csv_writer.writerows(energy.output_energy("Total", output_range))
 			sys.stderr.write("create: %s (total)\n" % output)
 
 	if flag_HF:
@@ -101,8 +118,8 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("HF"))
-			sys.stderr.write("create: %s (hartree)\n" % output)
+			csv_writer.writerows(energy.output_energy("HF", output_range))
+			sys.stderr.write("create: %s (HF)\n" % output)
 
 	if flag_corr:
 		output = prefix + "_MP2.csv"
@@ -110,7 +127,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("Total"))
+			csv_writer.writerows(energy.output_energy("CR", output_range))
 			sys.stderr.write("create: %s (correlation)\n" % output)
 
 	if flag_ES:
@@ -119,7 +136,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("ES"))
+			csv_writer.writerows(energy.output_energy("ES", output_range))
 			sys.stderr.write("create: %s (electrostatic)\n" % output)
 
 	if flag_EX:
@@ -128,7 +145,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("EX"))
+			csv_writer.writerows(energy.output_energy("EX", output_range))
 			sys.stderr.write("create: %s (exchange)\n" % output)
 
 	if flag_CT:
@@ -137,7 +154,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("CT"))
+			csv_writer.writerows(energy.output_energy("CT", output_range))
 			sys.stderr.write("create: %s (chargetransfer-mix)\n" % output)
 
 	if flag_DI:
@@ -146,7 +163,7 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("DI"))
+			csv_writer.writerows(energy.output_energy("DI", output_range))
 			sys.stderr.write("create: %s (dispersion)\n" % output)
 
 	if flag_q:
@@ -155,14 +172,14 @@ if __name__ == '__main__':
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("Q"))
+			csv_writer.writerows(energy.output_energy("Q", output_range))
 			sys.stderr.write("create: %s (chargetransfer-amount)\n" % output)
 
-	if args.flag_pc:
-		output = prefix + "_ac.csv"
+	if flag_pc:
+		output = prefix + "_pc.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_charge())
-			sys.stderr.write("create: %s (charge)\n" % output)
+			csv_writer.writerows(energy.output_charge(output_range))
+			sys.stderr.write("create: %s (partial charge)\n" % output)

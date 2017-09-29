@@ -5,7 +5,7 @@
 EnergyData class
 """
 
-import sys, re
+import sys, re, copy
 import numpy as np
 
 # =============== const =============== #
@@ -62,7 +62,7 @@ class EnergyData:
 					label = line[5:13].strip()
 					atoms = [int(x) for x in line[23:].strip().split()]
 					if label:
-						self.__label.append(label)
+						self.__label.append(int(label))
 						self.__frag_atom.append(atoms)
 					else:
 						self.__frag_atom[-1].extend(atoms)
@@ -194,32 +194,43 @@ class EnergyData:
 		if frag_idx is None:
 			return np.round(energies, digit)
 		else:
-			return np.round(energies[frag_idx[0]][frag_idx[1]], digit)
+			return np.round(energies[frag_idx[0] - 1][frag_idx[1] - 1], digit)
 
-	def output_energy(self, energy_type = "Total"):
+	def output_energy(self, energy_type = "Total", output_range = None):
 		""" IFIE エネルギーを出力形式で返すメソッド """
-		result = [[""] + self.get_label()]
-		row_label = np.matrix(np.array(self.get_label())).T
+		result = None
 
 		if energy_type == "Total":
-			result += np.concatenate((row_label, self.get_energy("Total")), axis = 1).tolist()
+			result = (self.get_energy("Total"))
 		elif energy_type == "HF":
-			result += np.concatenate((row_label, self.get_energy("HF")), axis = 1).tolist()
+			result = self.get_energy("HF")
 		elif energy_type == "CR":
-			result += np.concatenate((row_label, self.get_energy("CR")), axis = 1).tolist()
+			result = self.get_energy("CR")
 		elif energy_type == "ES":
-			result += np.concatenate((row_label, self.get_energy("ES")), axis = 1).tolist()
+			result = self.get_energy("ES")
 		elif energy_type == "EX":
-			result += np.concatenate((row_label, self.get_energy("EX")), axis = 1).tolist()
+			result = self.get_energy("EX")
 		elif energy_type == "CT":
-			result += np.concatenate((row_label, self.get_energy("CT")), axis = 1).tolist()
+			result = self.get_energy("CT")
 		elif energy_type == "DI":
-			result += np.concatenate((row_label, self.get_energy("DI")), axis = 1).tolist()
+			result = self.get_energy("DI")
 		elif energy_type == "Q":
-			result += np.concatenate((row_label, self.get_energy("Q")), axis = 1).tolist()
+			result = self.get_energy("Q")
+
+		label = copy.deepcopy(self.get_label())
+		if output_range is not None:
+			delete_range = list(set(self.get_label()) - set(output_range))
+			for idx in reversed(sorted(delete_range)):
+				del(label[idx - 1])
+				result = np.delete(result, idx - 1, 0)
+				result = np.delete(result, idx - 1, 1)
+
+		result = result.tolist()
+		result = [[label[idx]] + value for idx, value in enumerate(result)]
+		result = [[""] + label] + result
 		return result
 
-	def output_charge(self):
+	def output_charge(self, output_range = None):
 		""" 電荷情報を出力形式で返すメソッド """
 		result = []
 		result_frag = [["Fragment index", "Fragment charge", ""]]
@@ -227,9 +238,10 @@ class EnergyData:
 
 		cnt_atom = 0
 		for frag_idx in range(len(self.__frag_atom)):
-			result_frag.append([frag_idx + 1, self.__charge_frag[frag_idx], ""])
-			for atom_idx in self.__frag_atom[frag_idx]:
-				result_atom.append([frag_idx + 1, self.__charge_atom[atom_idx - 1][0], self.__charge_atom[atom_idx - 1][1], self.__charge_atom[atom_idx - 1][2]])
+			if output_range is None or frag_idx + 1 in output_range:
+				result_frag.append([frag_idx + 1, self.__charge_frag[frag_idx], ""])
+				for atom_idx in self.__frag_atom[frag_idx]:
+					result_atom.append([frag_idx + 1, self.__charge_atom[atom_idx - 1][0], self.__charge_atom[atom_idx - 1][1], self.__charge_atom[atom_idx - 1][2]])
 
 		diff_row = len(result_atom) - len(result_frag)
 		if 0 < diff_row:
