@@ -50,28 +50,40 @@ if __name__ == '__main__':
 
 	basic.check_exist(args.input, 2)
 
-	flag_total = args.flag_total
-	flag_HF = args.flag_HF
-	flag_corr = args.flag_corr
-	flag_ES = args.flag_ES
-	flag_EX = args.flag_EX
-	flag_CT = args.flag_CT
-	flag_DI = args.flag_DI
-	flag_q = args.flag_q
-	flag_pc = args.flag_pc
+	output_flag = [
+		args.flag_total,
+		args.flag_HF,
+		args.flag_corr,
+		args.flag_ES,
+		args.flag_EX,
+		args.flag_CT,
+		args.flag_DI
+	]
+	output_suffix = [
+		"_Total.csv",
+		"_HF.csv",
+		"_CR.csv",
+		"_ES.csv",
+		"_EX.csv",
+		"_CT.csv",
+		"_DI.csv",
+		"_transq.csv",
+	]
+	output_name = [
+		["Total", "Total energy"],
+		["HF", "HF energy"],
+		["CR", "Correlation energy"],
+		["ES", "Electrostatic energy"],
+		["EX", "Exchange repulsion energy"],
+		["CT", "Charge transfer energy"],
+		["DI", "Dispersion force"],
+		["Q", "Transfer charge"]
+	]
 
 	if args.flag_all:
-		flag_total = True
-		flag_HF = True
-		flag_corr = True
-		flag_ES = True
-		flag_EX = True
-		flag_CT = True
-		flag_DI = True
-		flag_q = True
-		flag_pc = True
+		output_flag = [True for x in output_flag]
 	elif flag_total == False:
-		if not (flag_HF or flag_corr or flag_ES or flag_EX or flag_CT or flag_DI or flag_q or args.flag_pc):
+		if len([True for x in output_flag if x == True]) == 0:
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
 			flag_total = True
 
@@ -103,79 +115,17 @@ if __name__ == '__main__':
 		prefix = re.sub(r"\..{3,4}$", "", args.input)
 
 	import csv
-	if flag_total:
-		output = prefix + "_tot.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("Total", output_range))
-			sys.stderr.write("create: %s (total)\n" % output)
+	for idx, flag in enumerate(output_flag):
+		if flag:
+			output = prefix + output_suffix[idx]
+			if args.flag_overwrite == False:
+				basic.check_overwrite(output)
+			with open(output, "w") as obj_output:
+				csv_writer = csv.writer(obj_output, lineterminator = "\n")
+				csv_writer.writerows(energy.output_energy(output_name[idx][0], output_range))
+				sys.stderr.write("create: {0} ({1})\n".format(output, output_name[idx][1]))
 
-	if flag_HF:
-		output = prefix + "_HF.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("HF", output_range))
-			sys.stderr.write("create: %s (HF)\n" % output)
-
-	if flag_corr:
-		output = prefix + "_MP2.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("CR", output_range))
-			sys.stderr.write("create: %s (correlation)\n" % output)
-
-	if flag_ES:
-		output = prefix + "_ES.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("ES", output_range))
-			sys.stderr.write("create: %s (electrostatic)\n" % output)
-
-	if flag_EX:
-		output = prefix + "_EX.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("EX", output_range))
-			sys.stderr.write("create: %s (exchange)\n" % output)
-
-	if flag_CT:
-		output = prefix + "_CT.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("CT", output_range))
-			sys.stderr.write("create: %s (chargetransfer-mix)\n" % output)
-
-	if flag_DI:
-		output = prefix + "_DI.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("DI", output_range))
-			sys.stderr.write("create: %s (dispersion)\n" % output)
-
-	if flag_q:
-		output = prefix + "_transq.csv"
-		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_energy("Q", output_range))
-			sys.stderr.write("create: %s (chargetransfer-amount)\n" % output)
-
-	if flag_pc:
+	if args.flag_q:
 		output = prefix + "_pc.csv"
 		if args.flag_overwrite == False:
 			basic.check_overwrite(output)
