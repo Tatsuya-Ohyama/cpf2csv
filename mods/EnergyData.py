@@ -11,6 +11,7 @@ import numpy as np
 # =============== const =============== #
 au = 627.5095
 digit = 4
+re_atomic_charge = re.compile(r"\d+[\s\t]+\D+(:?[\s\t]+-?\d+\.\d+){2}")
 
 class EnergyData:
 	""" エネルギーデータを扱うクラス """
@@ -131,7 +132,7 @@ class EnergyData:
 						self.__energy_Q[i][j] = float(line[78:93].strip())
 						self.__energy_Q[i][j] = -1 * float(line[78:93].strip())
 
-				elif flag_read[0] == 4:
+				elif flag_read[0] == 4 and re_atomic_charge.search(line):
 					# 電荷
 					if len(line.strip()) == 0:
 						flag_read = [0,0]
