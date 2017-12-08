@@ -9,7 +9,7 @@ import sys, os, re, signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import argparse
-from py_module_basic import basic
+import basic_func
 from mods import EnergyData
 
 # =============== functions =============== #
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 
-	basic.check_exist(args.input, 2)
+	basic_func.check_exist(args.input, 2)
 
 	output_flag = [
 		args.flag_total,
@@ -119,7 +119,7 @@ if __name__ == '__main__':
 		if flag:
 			output = prefix + output_suffix[idx]
 			if args.flag_overwrite == False:
-				basic.check_overwrite(output)
+				basic_func.check_overwrite(output)
 			with open(output, "w") as obj_output:
 				csv_writer = csv.writer(obj_output, lineterminator = "\n")
 				csv_writer.writerows(energy.output_energy(output_name[idx][0], output_range))
@@ -128,7 +128,7 @@ if __name__ == '__main__':
 	if args.flag_q:
 		output = prefix + "_pc.csv"
 		if args.flag_overwrite == False:
-			basic.check_overwrite(output)
+			basic_func.check_overwrite(output)
 		with open(output, "w") as obj_output:
 			csv_writer = csv.writer(obj_output, lineterminator = "\n")
 			csv_writer.writerows(energy.output_charge(output_range))
