@@ -85,7 +85,7 @@ if __name__ == '__main__':
 	elif args.flag_total == False:
 		if len([True for x in output_flag if x == True]) == 0:
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
-			output_frag[0] = True
+			output_flag[0] = True
 
 
 	# データ読み込み＆解析
