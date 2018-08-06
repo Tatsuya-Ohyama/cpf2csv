@@ -44,7 +44,11 @@ class EnergyData:
 
 		flag_read = [0,0]
 		with open(input_file, "r") as obj_input:
-			for line in obj_input:
+			for line_idx, line in enumerate(obj_input):
+				if "ERROR" in line:
+					sys.stderr.write("ERROR: ERROR in .log at {0}.\n".format(line_idx + 1))
+					sys.exit(1)
+
 				if flag_read[0] == 0:
 					# フラグ分類
 					if re_fragmentation.search(line):
