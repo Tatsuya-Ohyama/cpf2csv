@@ -57,7 +57,9 @@ if __name__ == '__main__':
 		args.flag_ES,
 		args.flag_EX,
 		args.flag_CT,
-		args.flag_DI
+		args.flag_DI,
+		args.flag_q,
+		args.flag_pc
 	]
 	output_suffix = [
 		"_Total.csv",
@@ -68,6 +70,7 @@ if __name__ == '__main__':
 		"_CT.csv",
 		"_DI.csv",
 		"_transq.csv",
+		"_pc.csv"
 	]
 	output_name = [
 		["Total", "Total energy"],
@@ -77,7 +80,8 @@ if __name__ == '__main__':
 		["EX", "Exchange repulsion energy"],
 		["CT", "Charge transfer energy"],
 		["DI", "Dispersion force"],
-		["Q", "Transfer charge"]
+		["Q", "Transfer charge"],
+		["PC", "Particle charge"]
 	]
 
 	if args.flag_all:
@@ -85,7 +89,7 @@ if __name__ == '__main__':
 	elif args.flag_total == False:
 		if len([True for x in output_flag if x == True]) == 0:
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
-			output_frag[0] = True
+			output_flag[0] = True
 
 
 	# データ読み込み＆解析
@@ -120,16 +124,14 @@ if __name__ == '__main__':
 			output = prefix + output_suffix[idx]
 			if args.flag_overwrite == False:
 				basic_func.check_overwrite(output)
-			with open(output, "w") as obj_output:
-				csv_writer = csv.writer(obj_output, lineterminator = "\n")
-				csv_writer.writerows(energy.output_energy(output_name[idx][0], output_range))
-				sys.stderr.write("create: {0} ({1})\n".format(output, output_name[idx][1]))
 
-	if args.flag_q:
-		output = prefix + "_pc.csv"
-		if args.flag_overwrite == False:
-			basic_func.check_overwrite(output)
-		with open(output, "w") as obj_output:
-			csv_writer = csv.writer(obj_output, lineterminator = "\n")
-			csv_writer.writerows(energy.output_charge(output_range))
-			sys.stderr.write("create: %s (partial charge)\n" % output)
+			if output_name[idx][0] == "PC":
+				with open(output, "w") as obj_output:
+					csv_writer = csv.writer(obj_output, lineterminator = "\n")
+					csv_writer.writerows(energy.output_charge(output_range))
+					sys.stderr.write("create: %s (partial charge)\n" % output)
+			else:
+				with open(output, "w") as obj_output:
+					csv_writer = csv.writer(obj_output, lineterminator = "\n")
+					csv_writer.writerows(energy.output_energy(output_name[idx][0], output_range))
+					sys.stderr.write("create: {0} ({1})\n".format(output, output_name[idx][1]))
