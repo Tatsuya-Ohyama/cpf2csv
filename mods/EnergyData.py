@@ -80,7 +80,7 @@ class EnergyData:
 						# 初期化
 						self._energy_HF = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						self._energy_CR = np.zeros((len(self._frag_atom), len(self._frag_atom)))
-						self._charge_frag = [[0.0, []] for i in range(len(self._frag_atom))]
+						self._charge_frag = [0.0 for i in range(len(self._frag_atom))]
 						flag_read[1] = 1
 
 					elif re_separator.search(line):
@@ -138,17 +138,18 @@ class EnergyData:
 						self._energy_Q[i][j] = float(line[78:93].strip())
 						self._energy_Q[i][j] = -1 * float(line[78:93].strip())
 
-				elif flag_read[0] == 4 and re_atomic_charge.search(line):
+				elif flag_read[0] == 4:
 					# 電荷
 					if len(line.strip()) == 0:
 						flag_read = [0,0]
 						continue
 
-					atom_idx = int(line[:13].strip())
-					charge = float(line[31:].strip())
-					data_idx = [idx for idx, value in enumerate(self._frag_atom) if atom_idx in value][0]
-					self._charge_atom.append([atom_idx, line[14:19].strip(), charge])
-					self._charge_frag[data_idx] += charge
+					if re_atomic_charge.search(line):
+						atom_idx = int(line[:13].strip())
+						charge = float(line[31:].strip())
+						data_idx = [idx for idx, value in enumerate(self._frag_atom) if atom_idx in value][0]
+						self._charge_atom.append([atom_idx, line[14:19].strip(), charge])
+						self._charge_frag[data_idx] += charge
 
 	def get_label(self, frag_idx = None):
 		""" ラベルを返すメソッド """
