@@ -9,12 +9,40 @@ import sys, os, re, signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 import argparse
-import basic_func
+from mods.basic_func import *
 from mods import EnergyData
+
+
+
+# =============== constant =============== #
+OUTPUT_SUFFIX = [
+	"_Total.csv",
+	"_HF.csv",
+	"_CR.csv",
+	"_ES.csv",
+	"_EX.csv",
+	"_CT.csv",
+	"_DI.csv",
+	"_transq.csv",
+	"_pc.csv"
+]
+OUTPUT_NAME = [
+	["Total", "Total energy"],
+	["HF", "HF energy"],
+	["CR", "Correlation energy"],
+	["ES", "Electrostatic energy"],
+	["EX", "Exchange repulsion energy"],
+	["CT", "Charge transfer energy"],
+	["DI", "Dispersion force"],
+	["Q", "Transfer charge"],
+	["PC", "Particle charge"]
+]
+
+
 
 # =============== functions =============== #
 # 二次リストから特定の値を検索し、index を返す
-def search_list(query, array, offset = 0):
+def search_list(query, array, offset=0):
 	index = offset
 	for item in array:
 		if query in item:
@@ -22,33 +50,34 @@ def search_list(query, array, offset = 0):
 		index += 1
 
 
+
 # =============== main =============== #
 if __name__ == '__main__':
-	parser = argparse.ArgumentParser(description = "cpf2csv - convert log for ABINIT-MP to CSV", formatter_class=argparse.RawTextHelpFormatter)
-	global_option = parser.add_argument_group(title = "global option", description = "")
-	global_option.add_argument("-i", dest = "input", metavar = "LOG", required = True, help = "LOG for ABINIT-MP")
-	global_option.add_argument("-o", dest = "prefix", help = "prefix for output")
-	global_option.add_argument("-O", dest = "flag_overwrite", action = "store_true", default = False, help = "overwrite forcibly (Default: False)")
+	parser = argparse.ArgumentParser(description="cpf2csv - convert log for ABINIT-MP to CSV", formatter_class=argparse.RawTextHelpFormatter)
+	global_option = parser.add_argument_group(title="global option", description="")
+	global_option.add_argument("-i", dest="input", metavar="LOG", required=True, help="LOG for ABINIT-MP")
+	global_option.add_argument("-o", dest="prefix", help="prefix for output")
+	global_option.add_argument("-O", dest="flag_overwrite", action="store_true", default=False, help="overwrite forcibly (Default: False)")
 
-	output_type = parser.add_argument_group(title = "energy type option", description = "energy type for output (default: -t)")
-	output_type.add_argument("-a", "--all", dest = "flag_all", action = "store_true", default = False, help = "select all type, same as -tfesxcdq")
-	output_type.add_argument("-t", "--total", dest = "flag_total", action = "store_true", default = False, help = "total energy (kcal/mol)")
-	output_type.add_argument("-f", "--hartree", dest = "flag_HF", action = "store_true", default = False, help = "Hartree-Fock energy (kcal/mol)")
-	output_type.add_argument("-e", "--correlation", dest = "flag_corr", action = "store_true", default = False, help = "electron correlation energy (kcal/mol)")
-	output_type.add_argument("-s", "--electrostatic", dest = "flag_ES", action = "store_true", default = False, help = "electrostatic interaction (ES) (kcal/mol)")
-	output_type.add_argument("-x", "--exchange", dest = "flag_EX", action = "store_true", default = False, help = "exchange-repulsion energy (EX) (kcal/mol)")
-	output_type.add_argument("-c", "--chargetransfer-mix", dest = "flag_CT", action = "store_true", default = False, help = "charge transfer and other interaction energy (CT+mix) (kcal/mol)")
-	output_type.add_argument("-d", "--dispersion", dest = "flag_DI", action = "store_true", default = False, help = "dispersion energy (DI) (kcal/mol)")
-	output_type.add_argument("-q", "--chargetransfer-amount", dest = "flag_q", action = "store_true", default = False, help = "amount of charge transfer (e; I(row) -> J(col))")
-	output_type.add_argument("-pc", "--partial-charge", dest = "flag_pc", action = "store_true", default = False, help = "partial charge")
+	output_type = parser.add_argument_group(title="energy type option", description="energy type for output (default: -t)")
+	output_type.add_argument("-a", "--all", dest="flag_all", action="store_true", default=False, help="select all type, same as -tfesxcdq")
+	output_type.add_argument("-t", "--total", dest="flag_total", action="store_true", default=False, help="total energy (kcal/mol)")
+	output_type.add_argument("-f", "--hartree", dest="flag_HF", action="store_true", default=False, help="Hartree-Fock energy (kcal/mol)")
+	output_type.add_argument("-e", "--correlation", dest="flag_corr", action="store_true", default=False, help="electron correlation energy (kcal/mol)")
+	output_type.add_argument("-s", "--electrostatic", dest="flag_ES", action="store_true", default=False, help="electrostatic interaction (ES) (kcal/mol)")
+	output_type.add_argument("-x", "--exchange", dest="flag_EX", action="store_true", default=False, help="exchange-repulsion energy (EX) (kcal/mol)")
+	output_type.add_argument("-c", "--chargetransfer-mix", dest="flag_CT", action="store_true", default=False, help="charge transfer and other interaction energy (CT+mix) (kcal/mol)")
+	output_type.add_argument("-d", "--dispersion", dest="flag_DI", action="store_true", default=False, help="dispersion energy (DI) (kcal/mol)")
+	output_type.add_argument("-q", "--chargetransfer-amount", dest="flag_q", action="store_true", default=False, help="amount of charge transfer (e; I(row) -> J(col))")
+	output_type.add_argument("-pc", "--partial-charge", dest="flag_pc", action="store_true", default=False, help="partial charge")
 
 	output_range = parser.add_mutually_exclusive_group()
-	output_range.add_argument("--include", dest = "include", metavar = "Frag_No.", nargs = "+", help = "")
-	output_range.add_argument("--exclude", dest = "exclude", metavar = "Frag_No.", nargs = "+", help = "")
+	output_range.add_argument("--include", dest="include", metavar="Frag_No.", nargs="+", help="")
+	output_range.add_argument("--exclude", dest="exclude", metavar="Frag_No.", nargs="+", help="")
 
 	args = parser.parse_args()
 
-	basic_func.check_exist(args.input, 2)
+	check_exist(args.input, 2)
 
 	output_flag = [
 		args.flag_total,
@@ -60,28 +89,6 @@ if __name__ == '__main__':
 		args.flag_DI,
 		args.flag_q,
 		args.flag_pc
-	]
-	output_suffix = [
-		"_Total.csv",
-		"_HF.csv",
-		"_CR.csv",
-		"_ES.csv",
-		"_EX.csv",
-		"_CT.csv",
-		"_DI.csv",
-		"_transq.csv",
-		"_pc.csv"
-	]
-	output_name = [
-		["Total", "Total energy"],
-		["HF", "HF energy"],
-		["CR", "Correlation energy"],
-		["ES", "Electrostatic energy"],
-		["EX", "Exchange repulsion energy"],
-		["CT", "Charge transfer energy"],
-		["DI", "Dispersion force"],
-		["Q", "Transfer charge"],
-		["PC", "Particle charge"]
 	]
 
 	if args.flag_all:
@@ -121,17 +128,17 @@ if __name__ == '__main__':
 	import csv
 	for idx, flag in enumerate(output_flag):
 		if flag:
-			output = prefix + output_suffix[idx]
+			output = prefix + OUTPUT_SUFFIX[idx]
 			if args.flag_overwrite == False:
-				basic_func.check_overwrite(output)
+				check_overwrite(output)
 
-			if output_name[idx][0] == "PC":
+			if OUTPUT_NAME[idx][0] == "PC":
 				with open(output, "w") as obj_output:
-					csv_writer = csv.writer(obj_output, lineterminator = "\n")
+					csv_writer = csv.writer(obj_output, lineterminator="\n")
 					csv_writer.writerows(energy.output_charge(output_range))
 					sys.stderr.write("create: %s (partial charge)\n" % output)
 			else:
 				with open(output, "w") as obj_output:
-					csv_writer = csv.writer(obj_output, lineterminator = "\n")
-					csv_writer.writerows(energy.output_energy(output_name[idx][0], output_range))
-					sys.stderr.write("create: {0} ({1})\n".format(output, output_name[idx][1]))
+					csv_writer = csv.writer(obj_output, lineterminator="\n")
+					csv_writer.writerows(energy.output_energy(OUTPUT_NAME[idx][0], output_range))
+					sys.stderr.write("create: {0} ({1})\n".format(output, OUTPUT_NAME[idx][1]))
