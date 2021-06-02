@@ -5,7 +5,9 @@
 EnergyData class
 """
 
-import sys, re, copy
+import sys
+import re
+import copy
 import numpy as np
 
 
@@ -52,9 +54,9 @@ class EnergyData:
 
 		flag_read = [0,0]
 		with open(input_file, "r") as obj_input:
-			for line_idx, line_val in enumerate(obj_input):
+			for line_idx, line_val in enumerate(obj_input, 1):
 				if "ERROR" in line_val:
-					sys.stderr.write("ERROR: ERROR in .log at {0}.\n".format(line_idx + 1))
+					sys.stderr.write("ERROR: ERROR in .log at {0}.\n".format(line_idx))
 					sys.exit(1)
 
 				if flag_read[0] == 0:
@@ -177,7 +179,7 @@ class EnergyData:
 		Returns:
 			str: ラベル
 		"""
-		if(frag_idx is None):
+		if frag_idx is None:
 			return self._label
 		else:
 			return self._label[frag_idx - 1]
@@ -193,7 +195,7 @@ class EnergyData:
 		Returns:
 			list: 構成原子のリスト
 		"""
-		if(frag_idx is None):
+		if frag_idx is None:
 			return self._frag_atom
 		else:
 			return self._frag_atom[frag_idx - 1]
@@ -278,7 +280,6 @@ class EnergyData:
 			list
 		"""
 		result = None
-
 		if energy_type == "Total":
 			result = (self.get_energy("Total"))
 		elif energy_type == "HF":
