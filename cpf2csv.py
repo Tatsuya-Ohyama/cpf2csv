@@ -13,7 +13,10 @@ import os
 import csv
 
 from mods.basic_func import *
-from mods import EnergyData
+from mods.FileLogABINITMP import FileLogABINITMP
+from mods.FileCpf import FileCpf
+
+from pprint import pprint
 
 
 
@@ -43,22 +46,11 @@ OUTPUT_NAME = [
 
 
 
-# =============== functions =============== #
-# 二次リストから特定の値を検索し、index を返す
-def search_list(query, array, offset=0):
-	index = offset
-	for item in array:
-		if query in item:
-			return index
-		index += 1
-
-
-
 # =============== main =============== #
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description="cpf2csv - convert log for ABINIT-MP to CSV", formatter_class=argparse.RawTextHelpFormatter)
 	global_option = parser.add_argument_group(title="global option", description="")
-	global_option.add_argument("-i", dest="INPUT", metavar="LOG", required=True, help="LOG for ABINIT-MP")
+	global_option.add_argument("-i", dest="INPUT", metavar="INPUT.(log|out|cpf)", required=True, help=".log, .out or .cpf for ABINIT-MP")
 	global_option.add_argument("-o", dest="PREFIX", help="prefix for output")
 	global_option.add_argument("-O", dest="FLAG_OVERWRITE", action="store_true", default=False, help="overwrite forcibly (Default: False)")
 
@@ -102,13 +94,18 @@ if __name__ == '__main__':
 			output_flag[0] = True
 
 	# データ読み込み＆解析
-	energy = EnergyData.EnergyData(args.INPUT)
+	data_FMO = None
+	if os.path.splitext(args.INPUT)[1] == ".cpf":
+		data_FMO = FileCpf(args.INPUT)
+
+	else:
+		data_FMO = FileLogABINITMP(args.INPUT)
 
 	# 出力フラグメントの決定
 	output_range = []
 	if args.INCLUDE is None and args.EXCLUDE is None:
 		# 未指定の場合
-		output_range = energy.get_label()
+		output_range = data_FMO.get_label()
 
 	elif args.INCLUDE is not None:
 		# include で指定の場合
@@ -116,7 +113,7 @@ if __name__ == '__main__':
 
 	elif args.EXCLUDE is not None:
 		# exclude で指定の場合
-		output_range = list(set(energy.get_label()) - set([int(x) for x in args.EXCLUDE]))
+		output_range = list(set(data_FMO.get_label()) - set([int(x) for x in args.EXCLUDE]))
 
 	# 出力ファイル
 	prefix = args.PREFIX
@@ -126,16 +123,16 @@ if __name__ == '__main__':
 	for idx, flag in enumerate(output_flag):
 		if flag:
 			output = prefix + OUTPUT_SUFFIX[idx]
-			if args.flag_overwrite == False:
+			if args.FLAG_OVERWRITE == False:
 				check_overwrite(output)
 
 			if OUTPUT_NAME[idx][0] == "PC":
 				with open(output, "w") as obj_output:
 					csv_writer = csv.writer(obj_output, lineterminator="\n")
-					csv_writer.writerows(energy.output_charge(output_range))
+					csv_writer.writerows(data_FMO.output_charge(output_range))
 					sys.stderr.write("create: %s (partial charge)\n" % output)
 			else:
 				with open(output, "w") as obj_output:
 					csv_writer = csv.writer(obj_output, lineterminator="\n")
-					csv_writer.writerows(energy.output_energy(OUTPUT_NAME[idx][0], output_range))
+					csv_writer.writerows(data_FMO.output_energy(OUTPUT_NAME[idx][0], output_range))
 					sys.stderr.write("create: {0} ({1})\n".format(output, OUTPUT_NAME[idx][1]))
