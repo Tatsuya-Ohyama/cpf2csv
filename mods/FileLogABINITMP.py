@@ -21,7 +21,7 @@ RE_IFIE = re.compile(r"## ((HF)|(MP2))-IFIE")
 
 
 # =============== classes =============== #
-class EnergyData:
+class FileLogABINITMP:
 	""" エネルギーデータを扱うクラス """
 	def __init__(self, input_file):
 		self._frag_atom = []
@@ -179,10 +179,10 @@ class EnergyData:
 		Returns:
 			str: ラベル
 		"""
-		if frag_idx is None:
-			return self._label
-		else:
+		if frag_idx is not None:
 			return self._label[frag_idx - 1]
+		else:
+			return self._label
 
 
 	def get_fragment_atom(self, frag_idx=None):
@@ -195,10 +195,10 @@ class EnergyData:
 		Returns:
 			list: 構成原子のリスト
 		"""
-		if frag_idx is None:
-			return self._frag_atom
-		else:
+		if frag_idx is not None:
 			return self._frag_atom[frag_idx - 1]
+		else:
+			return self._frag_atom
 
 
 	def get_atom_charge(self, atom_idx=None):
@@ -209,12 +209,12 @@ class EnergyData:
 			atom_idx (int, optional): 原子インデックス (Default: None)
 
 		Returns:
-			float: 原子電荷
+			list: [atom_idx(int), atom_name(str), charge(float)]
 		"""
-		if atom_idx is None:
-			return self._charge_atom
-		else:
+		if atom_idx is not None:
 			return self._charge_atom[atom_idx - 1]
+		else:
+			return self._charge_atom
 
 
 	def get_fragment_charge(self, frag_idx=None):
@@ -227,10 +227,10 @@ class EnergyData:
 		Returns:
 			float: フラグメント電荷
 		"""
-		if frag_idx is None:
-			return self._charge_frag
-		else:
+		if frag_idx is not None:
 			return self._charge_frag[frag_idx - 1]
+		else:
+			return self._charge_frag
 
 
 	def get_energy(self, energy_type="Total", frag_idx=None):
@@ -239,7 +239,7 @@ class EnergyData:
 
 		Args:
 			energy_type (str, optional): `Total`, `ES`, `EX`, `CT`, `DI` or `Q` (Default: "Total")
-			frag_idx (int, optional): フラグメントインデックス (Default: None)
+			frag_idx (list, optional): [frag_idx_A, frag_idx_B] (Default: None)
 
 		Returns:
 			list
@@ -282,20 +282,8 @@ class EnergyData:
 		result = None
 		if energy_type == "Total":
 			result = (self.get_energy("Total"))
-		elif energy_type == "HF":
-			result = self.get_energy("HF")
-		elif energy_type == "CR":
-			result = self.get_energy("CR")
-		elif energy_type == "ES":
-			result = self.get_energy("ES")
-		elif energy_type == "EX":
-			result = self.get_energy("EX")
-		elif energy_type == "CT":
-			result = self.get_energy("CT")
-		elif energy_type == "DI":
-			result = self.get_energy("DI")
-		elif energy_type == "Q":
-			result = self.get_energy("Q")
+		else:
+			result = self.get_energy(energy_type)
 
 		label = copy.deepcopy(self.get_label())
 		if output_range is not None:
@@ -316,7 +304,7 @@ class EnergyData:
 		電荷情報を出力形式で返すメソッド
 
 		Args:
-			output_range (list, optional): 出力するラベルリスト (Default: None)
+			output_range (list, optional): 出力するフラグメントラベルリスト (Default: None)
 
 		Returns:
 			list
