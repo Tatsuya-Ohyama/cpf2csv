@@ -376,6 +376,16 @@ class FileCpf:
 				if max_lines[0] == line_idx:
 					# バージョン
 					self._version = line_val.strip()
+					check_version = [v for v in CPF_VERSION.keys() if self._version == v or self._version.startswith(v + " ")]
+					if len(check_version) == 0:
+						sys.stderr.write("ERROR: unsupported version.\n")
+						sys.exit(1)
+
+					elif len(check_version) > 1:
+						sys.stderr.write("ERROR: cannot determine version.\n")
+						sys.exit(1)
+
+					self._version = check_version[0]
 
 				elif max_lines[1] == line_idx:
 					# 構造概要
