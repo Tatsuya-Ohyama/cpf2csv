@@ -7,11 +7,11 @@ CPF File class
 
 import sys, signal
 signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 import json
 import numpy as np
 import collections
 import copy
-from pprint import pprint
 
 
 
@@ -61,8 +61,9 @@ IFIE_FORMAT = {
 	'CPF Open1.0 rev10':              ['Repulsion', 'HF-Electron', 'HF-ES', 'MP2-IFIE', 'PR-MP2-IFIE' , 'SCS-MP2-IFIE', 'MP3-IFIE', 'SCS-MP3-IFIE', 'HF-IFIE-BSSE', 'MP2-IFIE-BSSE', 'SCS-MP2-IFIE-BSSE', 'MP3-IFIE-BSSE', 'SCS-MP3-IFIE-BSSE', 'Solv-ES', 'Solv-NP', 'PIEDA-EX', 'PIEDA-CT', 'PIEDA-dq']
 }
 
-
 ENERGY_TYPE = {
+	"HF": "HF-ES",
+	"CR": "MP2-IFIE",
 	"ES": "HF-ES",
 	"EX": "PIEDA-EX",
 	"CT": "PIEDA-CT",
@@ -765,6 +766,26 @@ class FileCpf:
 			return np.round((energy * f)[frag_idx[0] - 1][frag_idx[1] - 1], DIGIT)
 
 
+	def get_mint_distance(self, frag_idx=None, unit="bohr"):
+		"""
+		フラグメント間距離 (最短原子間距離) を返すメソッド
+
+		Args:
+			frag_idx (list, optional): [frag_idx_A, frag_idx_B] (Default: None)
+			unit (str): "a.u." or "kcal/mol" (Default: "kcal/mol")
+
+		Returns:
+			list
+		"""
+		list_idx = [IFIE_FORMAT[self._version].index(ENERGY_TYPE[energy_name]) for energy_name in ["ES", "EX", "CT", "DI"]]
+		distance = np.array([[obj_fragment1.get_distance(obj_fragment2, unit=unit) for obj_fragment2 in self._obj_fragments] for obj_fragment1 in self._obj_fragments])
+
+		if frag_idx is None:
+			return np.round(distance, DIGIT)
+		else:
+			return np.round(distance[frag_idx[0] - 1][frag_idx[1] - 1], DIGIT)
+
+
 	def output_energy(self, energy_type="Total", output_range=None):
 		"""
 		IFIE エネルギーを出力形式で返すメソッド
@@ -781,6 +802,33 @@ class FileCpf:
 			result = (self.get_energy("Total"))
 		else:
 			result = self.get_energy(energy_type)
+
+		label = copy.deepcopy(self.get_label())
+		if output_range is not None:
+			delete_range = list(set(self.get_label()) - set(output_range))
+			for idx in reversed(sorted(delete_range)):
+				del(label[idx - 1])
+				result = np.delete(result, idx - 1, 0)
+				result = np.delete(result, idx - 1, 1)
+
+		result = result.tolist()
+		result = [[label[idx]] + value for idx, value in enumerate(result)]
+		result = [[""] + label] + result
+		return result
+
+
+	def output_min_dist(self, output_range=None):
+		"""
+		最短距離を出力形式で返すメソッド
+
+		Args:
+			output_range (list, optional): 出力するフラグメントラベルリスト (Default: None)
+
+		Returns:
+			list
+		"""
+		result = None
+		result = self.get_mint_distance(unit="angstrom")
 
 		label = copy.deepcopy(self.get_label())
 		if output_range is not None:
@@ -1084,6 +1132,8 @@ class Fragment:
 			float: 距離
 		"""
 		if unit == "angstrom":
+			if obj_Fragment == self:
+				return 0.0
 			return BOHR_RADIUS * self._distances[obj_Fragment]
 		else:
 			return self._distances[obj_Fragment]
