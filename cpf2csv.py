@@ -38,7 +38,7 @@ OUTPUT_NAME = [
 	["ES", "Electrostatic energy"],
 	["EX", "Exchange repulsion energy"],
 	["CT", "Charge transfer energy"],
-	["DI", "Dispersion force"],
+	["DI", "Dispersion force energy"],
 	["Q", "Transfer charge"],
 	["P", "Particle charge"],
 	["M", "Minimum distance"]
