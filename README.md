@@ -6,7 +6,7 @@ ABINIT-MP の .log/.out/.cpf ファイルから、IFIE の相互作用を出力�
 
 ## 使用方法
 ```sh
-$ cpf2csv.py [-h] -i LOG [-o PREFIX] [-O] [-a] [-t] [-f] [-e] [-s] [-x] [-c] [-d] [-q] [-p] [-m] [--include Frag_No. [Frag_No. ...] | --exclude Frag_No. [Frag_No. ...]]
+$ cpf2csv.py [-h] -i INPUT.(log|out|cpf) [-o PREFIX] [-O] [-a] [-t] [-f] [-e] [-s] [-x] [-c] [-d] [-q] [-p] [-m] [--include Frag_No. [Frag_No. ...] | --exclude Frag_No. [Frag_No. ...]]
 ```
 
 * `-h`, `--help`
@@ -56,6 +56,11 @@ Copyright (c) year name
 
 
 ## 更新履歴
+### Ver. 11.2 (2022-01-17)
+* dq の行列の反対側の値の符号が逆転していないバグを修正した。
+* .cpf ファイルのバージョンチェック機能がうまく動作していないバグを修正した。
+* .cpf ファイルクラスを修正し、汎用性を高めた。
+
 ### Ver. 11.1 (2021-09-06)
 * フラグメント間距離 (最短原子間距離) 出力オプション (`-m`) を追加した。
 * 部分電荷出力オプションの記号を変更した (`-pc` → `-p`)。
