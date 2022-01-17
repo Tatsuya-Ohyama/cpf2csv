@@ -89,7 +89,10 @@ if __name__ == '__main__':
 	]
 
 	if args.FLAG_ALL:
-		output_flag = [True for x in output_flag]
+		if os.path.splitext(args.INPUT)[1].lower() == ".cpf":
+			output_flag = [True, False, False, True, True, True, True, True, True]
+		else:
+			output_flag = [True for x in output_flag]
 	elif args.FLAG_TOTAL == False:
 		if len([True for x in output_flag if x == True]) == 0:
 			# 他のオプションが未指定の場合のみ total オプションを機能させる
