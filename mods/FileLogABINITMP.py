@@ -15,6 +15,7 @@ import numpy as np
 # =============== const =============== #
 AU = 627.5095
 DIGIT = 4
+BOHR_RADIUS = 0.52911772
 RE_ATOMIC_CHARGE = re.compile(r"\d+[\s\t]+\D+(:?[\s\t]+-?\d+\.\d+){2}")
 RE_IFIE = re.compile(r"## ((HF)|(MP2))-IFIE")
 
@@ -33,6 +34,7 @@ class FileLogABINITMP:
 		self._energy_CT = None
 		self._energy_DI = None
 		self._energy_Q = None
+		self._distances = None
 
 		self._charge_atom = []
 		self._charge_frag = []
@@ -91,6 +93,7 @@ class FileLogABINITMP:
 						self._energy_HF = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						self._energy_CR = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						self._charge_frag = [0.0 for i in range(len(self._frag_atom))]
+						self._distances = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						flag_read[1] = 1
 
 					elif "------" in line_val:
@@ -109,10 +112,11 @@ class FileLogABINITMP:
 
 						if distance == 0.000000:
 							distance_idx.append(line_val[8:18].strip())
-							energies = [0.0 for x in energies]
+							energies = [0.0 for _ in energies]
 
 						self._energy_HF[i][j] = self._energy_HF[j][i] = energies[0]
 						self._energy_CR[i][j] = self._energy_CR[j][i] = energies[1]
+						self._distances[i][j] = self._distances[j][i] = distance
 
 				elif flag_read[0] == 3:
 					# PIDA
@@ -151,8 +155,8 @@ class FileLogABINITMP:
 						self._energy_EX[i][j] = self._energy_EX[j][i] = energies[1]
 						self._energy_CT[i][j] = self._energy_CT[j][i] = energies[2]
 						self._energy_DI[i][j] = self._energy_DI[j][i] = energies[3]
-						self._energy_Q[i][j] = float(line_val[78:93].strip())
-						self._energy_Q[i][j] = -1 * float(line_val[78:93].strip())
+						self._energy_Q[i][j] = -1 * energies[4]
+						self._energy_Q[j][i] = energies[4]
 
 				elif flag_read[0] == 4:
 					# 電荷
@@ -268,6 +272,26 @@ class FileLogABINITMP:
 			return np.round(energies[frag_idx[0] - 1][frag_idx[1] - 1], DIGIT)
 
 
+	def get_min_distance(self, frag_idx=None, unit="bohr"):
+		"""
+		フラグメント間距離 (最短原子間距離) を返すメソッド
+
+		Args:
+			frag_idx (list, optional): [frag_idx_A, frag_idx_B] (Default: None)
+			unit (str): "a.u." or "kcal/mol" (Default: "kcal/mol")
+
+		Returns:
+			list
+		"""
+		distances = self._distances
+		if unit == "bohr":
+			distances /= BOHR_RADIUS
+		if frag_idx is None:
+			return np.round(self._distances, DIGIT)
+		else:
+			return np.round(self._distance[frag_idx[0] - 1][frag_idx[1] - 1], DIGIT)
+
+
 	def output_energy(self, energy_type="Total", output_range=None):
 		"""
 		IFIE エネルギーを出力形式で返すメソッド
@@ -284,6 +308,33 @@ class FileLogABINITMP:
 			result = (self.get_energy("Total"))
 		else:
 			result = self.get_energy(energy_type)
+
+		label = copy.deepcopy(self.get_label())
+		if output_range is not None:
+			delete_range = list(set(self.get_label()) - set(output_range))
+			for idx in reversed(sorted(delete_range)):
+				del(label[idx - 1])
+				result = np.delete(result, idx - 1, 0)
+				result = np.delete(result, idx - 1, 1)
+
+		result = result.tolist()
+		result = [[label[idx]] + value for idx, value in enumerate(result)]
+		result = [[""] + label] + result
+		return result
+
+
+	def output_min_dist(self, output_range=None):
+		"""
+		最短距離を出力形式で返すメソッド
+
+		Args:
+			output_range (list, optional): 出力するフラグメントラベルリスト (Default: None)
+
+		Returns:
+			list
+		"""
+		result = None
+		result = self.get_min_distance(unit="angstrom")
 
 		label = copy.deepcopy(self.get_label())
 		if output_range is not None:
