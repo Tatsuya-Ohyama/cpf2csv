@@ -35,6 +35,7 @@ class FileLogABINITMP:
 		self._energy_DI = None
 		self._energy_Q = None
 		self._distances = None
+		self._dimer_es_approx = None
 
 		self._charge_atom = []
 		self._charge_frag = []
@@ -94,6 +95,7 @@ class FileLogABINITMP:
 						self._energy_CR = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						self._charge_frag = [0.0 for i in range(len(self._frag_atom))]
 						self._distances = np.zeros((len(self._frag_atom), len(self._frag_atom)))
+						self._dimer_es_approx = np.zeros((len(self._frag_atom), len(self._frag_atom)))
 						flag_read[1] = 1
 
 					elif "------" in line_val:
@@ -108,6 +110,13 @@ class FileLogABINITMP:
 						j = int(line_val[13:18].strip()) - 1
 						distance = float(line_val[18:30].strip())
 
+						dimer_es_approx = line_val[31:39].strip()
+						if dimer_es_approx == "T":
+							dimer_es_approx = True
+
+						elif dimer_es_approx == "F":
+							dimer_es_approx = False
+
 						energies = [float(x.strip()) for x in [line_val[39:50], line_val[50:61]]]
 
 						if distance == 0.000000:
@@ -117,6 +126,8 @@ class FileLogABINITMP:
 						self._energy_HF[i][j] = self._energy_HF[j][i] = energies[0]
 						self._energy_CR[i][j] = self._energy_CR[j][i] = energies[1]
 						self._distances[i][j] = self._distances[j][i] = distance
+						if dimer_es_approx:
+							self._dimer_es_approx[i][j] = self._dimer_es_approx[j][i] = 1
 
 				elif flag_read[0] == 3:
 					# PIDA
@@ -256,7 +267,7 @@ class FileLogABINITMP:
 		elif energy_type == "CR":
 			energies = self._energy_CR * AU
 		elif energy_type == "ES":
-			energies = self._energy_ES
+			energies = self._energy_ES + self._energy_HF * self._dimer_es_approx * AU
 		elif energy_type == "EX":
 			energies = self._energy_EX
 		elif energy_type == "CT":
