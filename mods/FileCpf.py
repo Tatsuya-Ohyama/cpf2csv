@@ -39,6 +39,7 @@ STRUCTURE_COLUMNS = [
 ]
 
 CPF_VERSION = {
+	'CPF Ver.4.201': 'CPFVersion.Ver4_201_MIZUHO',
 	'CPF Ver.4.201 (MIZUHO)': 'CPFVersion.Ver4_201_MIZUHO',
 	'CPF Ver.7.0 (MIZUHO 4.0)': 'CPFVersion.Ver70_MIZUHO40',
 	'CPF Open1.0 rev10': 'CPFVersion.Ver_Open1_0_rev10',
